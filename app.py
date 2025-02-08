@@ -6,6 +6,8 @@ import threading
 import time
 import secrets
 from mss import mss  # Using mss instead of pyautogui for screen capture
+from werkzeug.utils import secure_filename
+import json
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)  # Secure secret key for sessions
@@ -65,28 +67,23 @@ def stop_recording():
     else:
         return {"status": "error", "message": "No recording in progress"}
 
-@app.route('/download_recording', methods=['GET'])
-def download_recording():
-    global output_filename
-    
-    if os.path.exists(output_filename):
-        try:
-            # Get the filename without the session ID
-            display_filename = "recording.mp4"
-            return send_file(output_filename, 
-                           as_attachment=True, 
-                           download_name=display_filename)
-        except Exception as e:
-            return {"status": "error", "message": "Error downloading file"}
-    else:
-        return {"status": "error", "message": "No recording available"}
+@app.route('/download_recording/<filename>')
+def download_recording(filename):
+    try:
+        return send_file(
+            os.path.join(UPLOAD_FOLDER, secure_filename(filename)),
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        return {"status": "error", "message": "Error downloading file"}
 
 @app.route('/get_video_path')
 def get_video_path():
     global output_filename
     if os.path.exists(output_filename):
-        # Return the relative path for the video preview
-        relative_path = output_filename.replace('static/', '')
+        # Return the relative path from static folder
+        relative_path = output_filename.split('static/')[-1]
         return {"status": "success", "path": relative_path}
     return {"status": "error", "message": "No recording available"}
 
@@ -95,64 +92,84 @@ def get_recordings():
     if 'user_id' not in session:
         return {"status": "error", "message": "No session found"}
     
-    # Get all recordings from the upload folder
-    user_recordings = [f for f in os.listdir(UPLOAD_FOLDER) 
-                      if f.startswith(f"recording_{session['user_id']}_")]
-    recordings = []
-    for file in user_recordings:
-        timestamp = file.split('_')[-1].replace('.mp4', '')
-        file_path = os.path.join(UPLOAD_FOLDER, file)
-        if os.path.exists(file_path):
-            recordings.append({
-                'filename': file,
-                'path': f'recordings/{file}',  # Relative path for frontend
-                'date': time.strftime('%Y-%m-%d %H:%M:%S', 
-                                    time.localtime(int(timestamp)))
-            })
-    return {"status": "success", "recordings": recordings}
+    try:
+        # Get all recordings for the current user
+        user_recordings = [f for f in os.listdir(UPLOAD_FOLDER) 
+                          if f.startswith(f"recording_{session['user_id']}_")]
+        recordings = []
+        
+        for file in user_recordings:
+            timestamp = file.split('_')[-1].replace('.mp4', '')
+            file_path = os.path.join('recordings', file)  # Relative path for frontend
+            
+            if os.path.exists(os.path.join(UPLOAD_FOLDER, file)):
+                recordings.append({
+                    'filename': file,
+                    'path': file_path,
+                    'date': time.strftime('%Y-%m-%d %H:%M:%S', 
+                                        time.localtime(int(timestamp)))
+                })
+        
+        # Sort recordings by date (newest first)
+        recordings.sort(key=lambda x: x['date'], reverse=True)
+        return {"status": "success", "recordings": recordings}
+        
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.route('/delete_recording/<filename>', methods=['DELETE'])
+def delete_recording(filename):
+    try:
+        # Ensure the filename belongs to the current user
+        if not filename.startswith(f"recording_{session['user_id']}_"):
+            return {"status": "error", "message": "Unauthorized"}, 403
+        
+        file_path = os.path.join(UPLOAD_FOLDER, secure_filename(filename))
+        
+        # Check if file exists
+        if not os.path.exists(file_path):
+            return {"status": "error", "message": "Recording not found"}, 404
+            
+        # Delete the file
+        os.remove(file_path)
+        return {"status": "success", "message": "Recording deleted successfully"}
+        
+    except Exception as e:
+        return {"status": "error", "message": str(e)}, 500
 
 def record_screen():
     global is_recording, output_filename, recording_error
 
     try:
         with mss() as sct:
-            # Get the screen size from the primary monitor
             monitor = sct.monitors[1]  # Primary monitor
             width = monitor["width"]
             height = monitor["height"]
 
-            # Change codec to 'avc1' for better browser compatibility
-            fourcc = cv2.VideoWriter_fourcc(*'avc1')  # Changed from 'mp4v' to 'avc1'
+            # Ensure the output directory exists
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+            fourcc = cv2.VideoWriter_fourcc(*'avc1')
             out = None
             
             try:
                 out = cv2.VideoWriter(output_filename, fourcc, 20.0, (width, height))
                 
                 while is_recording:
-                    try:
-                        # Capture the screen
-                        screen = sct.grab(monitor)
-                        # Convert to numpy array
-                        frame = np.array(screen)
-                        # Convert from BGRA to BGR
-                        frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
-                        # Write the frame
-                        out.write(frame)
-                        time.sleep(0.05)  # Add small delay to reduce CPU usage
-                    except Exception as e:
-                        recording_error = f"Error during recording: {str(e)}"
-                        break
-                
+                    screen = sct.grab(monitor)
+                    frame = np.array(screen)
+                    frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+                    out.write(frame)
+                    time.sleep(0.05)  # Reduce CPU usage
+                    
             finally:
-                # Ensure proper cleanup
                 if out is not None:
                     out.release()
-                    # Ensure the file is properly closed
                     cv2.waitKey(1)
-                    time.sleep(0.5)  # Give time for the file to be written
+                    time.sleep(0.5)  # Ensure file is written
                 
     except Exception as e:
-        recording_error = f"Error setting up recording: {str(e)}"
+        recording_error = f"Error in recording: {str(e)}"
         is_recording = False
 
 if __name__ == '__main__':
