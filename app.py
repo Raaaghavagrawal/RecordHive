@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file, session
+from flask import Flask, render_template, request, send_file, session, jsonify
 import cv2
 import numpy as np
 import os
@@ -120,22 +120,26 @@ def get_recordings():
 @app.route('/delete_recording/<filename>', methods=['DELETE'])
 def delete_recording(filename):
     try:
+        if 'user_id' not in session:
+            return jsonify({"status": "error", "message": "No session found"}), 401
+            
         # Ensure the filename belongs to the current user
         if not filename.startswith(f"recording_{session['user_id']}_"):
-            return {"status": "error", "message": "Unauthorized"}, 403
+            return jsonify({"status": "error", "message": "Unauthorized"}), 403
         
         file_path = os.path.join(UPLOAD_FOLDER, secure_filename(filename))
         
         # Check if file exists
         if not os.path.exists(file_path):
-            return {"status": "error", "message": "Recording not found"}, 404
+            return jsonify({"status": "error", "message": "Recording not found"}), 404
             
         # Delete the file
         os.remove(file_path)
-        return {"status": "success", "message": "Recording deleted successfully"}
+        return jsonify({"status": "success", "message": "Recording deleted successfully"})
         
     except Exception as e:
-        return {"status": "error", "message": str(e)}, 500
+        app.logger.error(f"Error deleting recording: {str(e)}")
+        return jsonify({"status": "error", "message": "Server error"}), 500
 
 def record_screen():
     global is_recording, output_filename, recording_error
