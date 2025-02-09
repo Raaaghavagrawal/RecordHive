@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Recorder</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'sans-serif'],
+                    },
+                    animation: {
+                        'float': 'float 15s infinite linear',
+                        'slideIn': 'slideIn 0.5s ease-out',
+                        'fadeIn': 'fadeIn 1s ease-in',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%': { transform: 'translateY(100vh) translateX(-50px) rotate(0deg)', opacity: '0' },
+                            '20%': { opacity: '0.8' },
+                            '80%': { opacity: '0.8' },
+                            '100%': { transform: 'translateY(-100px) translateX(50px) rotate(360deg)', opacity: '0' }
+                        },
+                        slideIn: {
+                            '0%': { transform: 'translateY(-20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' }
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                sans-serif;
+        }
+
+        h1 {
+            font-weight: 600;
+        }
+
+        button {
+            font-weight: 500;
+        }
+
+        .recording-date {
+            font-weight: 400;
+        }
+
+        /* Add styles for footer hover effects */
+        .footer-link {
+            position: relative;
+        }
+
+        .footer-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 1px;
+            bottom: -2px;
+            left: 0;
+            background-color: currentColor;
+            transition: width 0.3s ease;
+        }
+
+        .footer-link:hover::after {
+            width: 100%;
+        }
+
+        /* Ensure footer stays above particles but below other content */
+        footer {
+            z-index: 10;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            overflow-x: hidden;
+        }
+
+        /* Enhanced animation for hero text */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fadeInUp {
+            animation: fadeInUp 1s ease-out;
+        }
+
+        /* Enhanced button styles */
+        #startBtn, #startBtnMobile {
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        #startBtn::after, #startBtnMobile::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 120%;
+            height: 120%;
+            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            transition: transform 0.5s, opacity 0.5s;
+        }
+
+        #startBtn:hover::after, #startBtnMobile:hover::after {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .absolute.left-8 {
+                position: static;
+                margin: 2rem auto;
+                text-align: center;
+            }
+        }
+
+        /* Glass effect for containers */
+        .backdrop-blur-lg {
+            backdrop-filter: blur(16px);
+        }
+
+        /* Button hover effects */
+        .hover\:scale-105:hover {
+            transform: scale(1.05);
+        }
+
+        /* Recording list item styles */
+        #recordingsList li {
+            background-color: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(4px);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            transition: all 0.3s;
+        }
+
+        .dark #recordingsList li {
+            background-color: rgba(55, 65, 81, 0.5);
+        }
+
+        #recordingsList li:hover {
+            transform: translateX(0.5rem);
+        }
+
+        /* Remove any fixed positioning styles */
+        .absolute.left-8 {
+            position: absolute;
+            /* Adjust these values to position the button where you want it */
+            left: 2rem;
+        }
+
+        /* Ensure smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+            overflow-x: hidden;
+        }
+
+        /* Prevent horizontal scrolling */
+        body {
+            overflow-x: hidden;
+        }
+
+        /* Add smooth transitions */
+        #startBtn, #startBtnMobile {
+            transition: all 0.3s ease;
+        }
+
+        /* Enhanced hover effects */
+        #startBtn:hover, #startBtnMobile:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-5 relative overflow-x-hidden transition-all duration-300 bg-white dark:bg-[#0d113d] font-sans">
+    <div id="particleContainer" class="fixed inset-0 pointer-events-none"></div>
+    
+    <button id="themeToggle" class="theme-toggle fixed top-5 right-5 p-4 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-800 dark:border-white cursor-pointer shadow-lg hover:scale-110 transition-all duration-300 z-50 w-[50px] h-[50px] flex items-center justify-center text-xl">
+        <i class="fas fa-sun text-gray-800 dark:text-white"></i>
+    </button>
+
+    <!-- Hero Section -->
+    <div class="min-h-screen w-full flex flex-col items-center justify-center px-4">
+        <div class="text-center max-w-5xl mx-auto">
+            <h1 class="text-6xl md:text-7xl lg:text-8xl font-bold mb-8 text-gray-800 dark:text-white animate-fadeIn tracking-tight">
+                Screen Recorder
+            </h1>
+            <p class="text-xl md:text-2xl lg:text-3xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+                Capture your screen with ease. Perfect for tutorials, presentations, and sharing your work with the world.
+            </p>
+            
+            <!-- Feature Highlights -->
+            <div class="flex flex-col md:flex-row justify-center items-center gap-8 mb-16">
+                <div class="flex items-center gap-3 text-lg md:text-xl text-gray-600 dark:text-gray-300">
+                    <i class="fas fa-check-circle text-green-500 text-2xl"></i>
+                    <span>No Installation Required</span>
+                </div>
+                <div class="flex items-center gap-3 text-lg md:text-xl text-gray-600 dark:text-gray-300">
+                    <i class="fas fa-check-circle text-green-500 text-2xl"></i>
+                    <span>High Quality Recording</span>
+                </div>
+                <div class="flex items-center gap-3 text-lg md:text-xl text-gray-600 dark:text-gray-300">
+                    <i class="fas fa-check-circle text-green-500 text-2xl"></i>
+                    <span>Easy to Share</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main-content" class="container max-w-3xl mx-auto px-4 py-20">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg transition-all duration-300 hover:-translate-y-2">
+            <!-- Recording Controls -->
+            <div class="flex justify-between items-center gap-4 mb-6">
+                <button id="startBtn" onclick="startRecording()" class="px-8 py-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed text-lg">
+                    <i class="fas fa-video"></i> Start Recording
+                </button>
+
+                <button id="stopBtn" onclick="stopRecording()" disabled class="px-8 py-4 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed enabled:animate-pulse text-lg">
+                    <i class="fas fa-stop"></i> Stop Recording
+                </button>
+            </div>
+
+            <div id="recordingIndicator" class="hidden text-red-500 text-center block animate-pulse text-lg">
+                <i class="fas fa-circle"></i> Recording in progress...
+            </div>
+
+            <div id="status" class="hidden my-4 p-4 rounded-lg animate-slideIn text-center font-medium"></div>
+
+            <div id="videoPreview" class="hidden mt-8">
+                <h3 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">Recording Preview</h3>
+                <video id="previewPlayer" controls class="w-full rounded-lg shadow-md"></video>
+            </div>
+
+            <div class="recordings-section mt-12">
+                <h2 class="text-2xl font-semibold mb-6 text-gray-800 dark:text-white">Your Recordings</h2>
+                <ul id="recordingsList" class="space-y-4"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full mt-auto py-4 bg-white/10 dark:bg-gray-800/10 backdrop-blur-sm border-t border-gray-200/20 dark:border-gray-700/20">
+        <div class="container mx-auto max-w-6xl flex flex-col md:flex-row justify-between items-center text-sm px-4 gap-4">
+            <div class="text-gray-600 dark:text-gray-400 font-light">
+                Record your screen with ease • Share your vision
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="text-gray-600 dark:text-gray-400 font-medium">Contact Us:</span>
+                <div class="flex gap-3">
+                    <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer" class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors duration-300">
+                        <i class="fab fa-github text-lg"></i>
+                    </a>
+                    <a href="https://linkedin.com/in/yourusername" target="_blank" rel="noopener noreferrer" class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors duration-300">
+                        <i class="fab fa-linkedin text-lg"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const downloadLink = document.getElementById('downloadLink');
+        const status = document.getElementById('status');
+        const videoPreview = document.getElementById('videoPreview');
+        const previewPlayer = document.getElementById('previewPlayer');
+        const recordingIndicator = document.getElementById('recordingIndicator');
+        const recordingsList = document.getElementById('recordingsList');
+        const themeToggle = document.getElementById('themeToggle');
+
+        function showStatus(message, isError = false) {
+            status.textContent = message;
+            status.style.display = 'block';
+            
+            // Remove existing classes
+            status.className = 'my-4 p-4 rounded-lg animate-slideIn text-center font-medium';
+            
+            // Add appropriate classes based on type
+            if (isError) {
+                status.classList.add('bg-red-100', 'dark:bg-red-900/20', 'text-red-700', 'dark:text-red-300', 'border-l-4', 'border-red-500');
+            } else {
+                status.classList.add('bg-green-100', 'dark:bg-green-900/20', 'text-green-700', 'dark:text-green-300', 'border-l-4', 'border-green-500');
+            }
+
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
+        }
+
+        async function startRecording() {
+            try {
+                const startBtn = document.getElementById('startBtn');
+                const stopBtn = document.getElementById('stopBtn');
+                const recordingIndicator = document.getElementById('recordingIndicator');
+
+                // Update button states
+                startBtn.classList.add('opacity-30', 'cursor-not-allowed');
+                startBtn.disabled = true;
+                
+                stopBtn.classList.remove('opacity-30', 'cursor-not-allowed');
+                stopBtn.classList.add('opacity-100');
+                stopBtn.disabled = false;
+                
+                recordingIndicator.classList.remove('hidden');
+                
+                const response = await fetch('/start_recording', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                // Add check for empty response
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    throw new Error('Invalid JSON response from server');
+                }
+                
+                if (data.status === 'success') {
+                    showStatus('Recording started');
+                } else {
+                    throw new Error(data.message || 'Failed to start recording');
+                }
+            } catch (error) {
+                console.error('Recording error:', error);
+                showStatus(error.message || 'Failed to start recording', true);
+                resetButtonStates();
+            }
+        }
+
+        async function stopRecording() {
+            try {
+                const startBtn = document.getElementById('startBtn');
+                const stopBtn = document.getElementById('stopBtn');
+                const recordingIndicator = document.getElementById('recordingIndicator');
+                const videoPreview = document.getElementById('videoPreview');
+                const previewPlayer = document.getElementById('previewPlayer');
+
+                // Update button states
+                stopBtn.classList.add('opacity-30', 'cursor-not-allowed');
+                stopBtn.disabled = true;
+                
+                startBtn.classList.remove('opacity-30', 'cursor-not-allowed');
+                startBtn.classList.add('opacity-100');
+                startBtn.disabled = false;
+                
+                recordingIndicator.classList.add('hidden');
+                
+                const response = await fetch('/stop_recording', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                // Add check for empty response
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    throw new Error('Invalid JSON response from server');
+                }
+                
+                if (data.status === 'success') {
+                    showStatus('Recording stopped');
+                    const videoPathResponse = await fetch('/get_video_path');
+                    
+                    if (!videoPathResponse.ok) {
+                        throw new Error(`HTTP error! status: ${videoPathResponse.status}`);
+                    }
+                    
+                    let videoPathData;
+                    try {
+                        videoPathData = await videoPathResponse.json();
+                    } catch (e) {
+                        throw new Error('Invalid JSON response when getting video path');
+                    }
+                    
+                    if (videoPathData.status === 'success') {
+                        saveRecordingToLocalStorage({
+                            filename: videoPathData.path.split('/').pop(),
+                            path: videoPathData.path,
+                            date: new Date().toISOString()
+                        });
+                        
+                        videoPreview.classList.remove('hidden');
+                        previewPlayer.src = '/static/' + videoPathData.path;
+                        startBtn.disabled = false;
+                        
+                        await loadRecordings();
+                    } else {
+                        throw new Error(videoPathData.message || 'Failed to get video path');
+                    }
+                } else {
+                    throw new Error(data.message || 'Failed to stop recording');
+                }
+            } catch (error) {
+                console.error('Stop recording error:', error);
+                showStatus(error.message || 'Failed to stop recording', true);
+                resetButtonStates();
+            }
+        }
+
+        async function loadRecordings() {
+            try {
+                const response = await fetch('/get_recordings');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    recordingsList.innerHTML = '';
+                    
+                    // Combine server recordings with local storage
+                    const localRecordings = loadRecordingsFromLocalStorage();
+                    const allRecordings = [...data.recordings];
+                    
+                    // Update local storage with new recordings
+                    data.recordings.forEach(recording => {
+                        if (!localRecordings.some(r => r.filename === recording.filename)) {
+                            saveRecordingToLocalStorage(recording);
+                        }
+                    });
+
+                    if (allRecordings.length === 0) {
+                        recordingsList.innerHTML = `
+                            <div class="text-center text-gray-500 dark:text-gray-400 italic py-5">
+                                No recordings found
+                            </div>`;
+                        return;
+                    }
+                    
+                    // Sort recordings by date (newest first)
+                    allRecordings.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    
+                    allRecordings.forEach(recording => {
+                        const li = createRecordingItem(recording);
+                        recordingsList.appendChild(li);
+                    });
+                }
+            } catch (error) {
+                showStatus('Error loading recordings', true);
+            }
+        }
+
+        function createRecordingItem(recording) {
+            const li = document.createElement('li');
+            li.className = 'bg-gray-50 dark:bg-gray-700 p-4 rounded-lg flex flex-wrap justify-between items-center gap-4 transition-all duration-300 hover:translate-x-2';
+            li.innerHTML = `
+                <div class="text-gray-600 dark:text-gray-300 text-sm">
+                    ${recording.date}
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="watchRecording('${recording.path}')" 
+                            class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-all duration-300 flex items-center gap-2">
+                        <i class="fas fa-play"></i> Watch
+                    </button>
+                    <a href="/download_recording" 
+                       class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-all duration-300 flex items-center gap-2">
+                        <i class="fas fa-download"></i> Download
+                    </a>
+                </div>
+            `;
+            return li;
+        }
+
+        function watchRecording(filename) {
+            videoPreview.style.display = 'block';
+            previewPlayer.src = `/static/recordings/${filename}`;
+            previewPlayer.play();
+            
+            videoPreview.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            resetButtonStates();
+            loadThemePreference();
+            createParticles();
+            loadRecordings();
+            
+            // Add click event listener to theme toggle button
+            document.querySelector('.theme-toggle').addEventListener('click', toggleTheme);
+        });
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeIcon = themeToggle.querySelector('i');
+            
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                themeIcon.className = 'fas fa-moon text-gray-800';
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.classList.add('dark');
+                themeIcon.className = 'fas fa-sun text-white';
+                localStorage.setItem('theme', 'dark');
+            }
+            
+            // Recreate particles with new theme colors
+            createParticles();
+        }
+
+        function createParticles() {
+            const container = document.getElementById('particleContainer');
+            const particleCount = 30;
+
+            container.innerHTML = '';
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle absolute rounded-full pointer-events-none animate-float';
+                
+                // Add theme-specific styles
+                if (document.documentElement.classList.contains('dark')) {
+                    particle.classList.add('bg-white/30', 'shadow-[0_0_15px_rgba(255,255,255,0.1)]');
+                } else {
+                    particle.classList.add('bg-blue-500/30', 'shadow-[0_0_10px_rgba(52,152,219,0.2)]');
+                }
+                
+                const size = Math.random() * 25 + 10;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                particle.style.left = `${Math.random() * 100}vw`;
+                particle.style.top = `${Math.random() * 100}vh`;
+                
+                const duration = Math.random() * 20 + 10;
+                const delay = Math.random() * -30;
+                particle.style.animation = `float ${duration}s ${delay}s infinite linear`;
+                
+                container.appendChild(particle);
+            }
+        }
+
+        function loadThemePreference() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            const html = document.documentElement;
+            const themeIcon = document.querySelector('.theme-toggle i');
+            
+            if (theme === 'light') {
+                html.classList.remove('dark');
+                themeIcon.className = 'fas fa-moon text-gray-800';
+            } else {
+                html.classList.add('dark');
+                themeIcon.className = 'fas fa-sun text-white';
+            }
+        }
+
+        // Recreate particles periodically
+        setInterval(createParticles, 30000);
+
+        // Add local storage functions
+        function saveRecordingToLocalStorage(recording) {
+            let recordings = JSON.parse(localStorage.getItem('recordings') || '[]');
+            recordings.push(recording);
+            localStorage.setItem('recordings', JSON.stringify(recordings));
+        }
+
+        function loadRecordingsFromLocalStorage() {
+            return JSON.parse(localStorage.getItem('recordings') || '[]');
+        }
+
+        // Add function to reset button states
+        function resetButtonStates() {
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const recordingIndicator = document.getElementById('recordingIndicator');
+
+            startBtn.classList.remove('opacity-30', 'cursor-not-allowed');
+            startBtn.classList.add('opacity-100');
+            startBtn.disabled = false;
+
+            stopBtn.classList.add('opacity-30', 'cursor-not-allowed');
+            stopBtn.classList.remove('opacity-100');
+            stopBtn.disabled = true;
+
+            recordingIndicator.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
