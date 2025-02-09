@@ -196,6 +196,40 @@
             transform: translateY(-2px) scale(1.05);
             box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4);
         }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.5);
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(59, 130, 246, 0.7);
+        }
+
+        /* Add smooth show/hide transitions */
+        #videoPreview, #recordingIndicator, #status {
+            transition: all 0.3s ease-in-out;
+        }
+
+        /* Enhance recording list items */
+        #recordingsList li {
+            backdrop-filter: blur(8px);
+            transition: all 0.3s ease;
+        }
+
+        #recordingsList li:hover {
+            transform: translateX(0.5rem) scale(1.01);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-start p-5 relative overflow-x-hidden transition-all duration-300 bg-white dark:bg-[#0d113d] font-sans">
@@ -208,12 +242,20 @@
     <!-- Hero Section -->
     <div class="min-h-screen w-full flex flex-col items-center justify-center px-4">
         <div class="text-center max-w-5xl mx-auto">
+            <p class="text-xl md:text-2xl lg:text-3xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+                Welcome to ,
+            </p>
             <h1 class="text-6xl md:text-7xl lg:text-8xl font-bold mb-8 text-gray-800 dark:text-white animate-fadeIn tracking-tight">
-                Screen Recorder
+                RecordHive
             </h1>
             <p class="text-xl md:text-2xl lg:text-3xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
                 Capture your screen with ease. Perfect for tutorials, presentations, and sharing your work with the world.
             </p>
+            
+            <!-- Added Start Recording Button -->
+            <button onclick="scrollToRecording()" class="px-8 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 flex items-center justify-center gap-2 mx-auto mb-12 text-lg hover:scale-105 hover:-translate-y-1 shadow-lg">
+                <i class="fas fa-video"></i> Start Recording
+            </button>
             
             <!-- Feature Highlights -->
             <div class="flex flex-col md:flex-row justify-center items-center gap-8 mb-16">
@@ -234,33 +276,39 @@
     </div>
 
     <!-- Main Content -->
-    <div id="main-content" class="container max-w-3xl mx-auto px-4 py-20">
-        <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg transition-all duration-300 hover:-translate-y-2">
+    <div id="main-content" class="container max-w-3xl mx-auto px-4 py-20 flex items-center min-h-screen">
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg p-8 rounded-2xl shadow-2xl transition-all duration-300 hover:-translate-y-2 w-full border border-white/20 dark:border-gray-700/20">
             <!-- Recording Controls -->
-            <div class="flex justify-between items-center gap-4 mb-6">
-                <button id="startBtn" onclick="startRecording()" class="px-8 py-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed text-lg">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+                <button id="startBtn" onclick="startRecording()" 
+                    class="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed text-lg transform hover:scale-105 hover:shadow-xl">
                     <i class="fas fa-video"></i> Start Recording
                 </button>
 
-                <button id="stopBtn" onclick="stopRecording()" disabled class="px-8 py-4 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed enabled:animate-pulse text-lg">
+                <button id="stopBtn" onclick="stopRecording()" disabled 
+                    class="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed enabled:animate-pulse text-lg transform hover:scale-105 hover:shadow-xl">
                     <i class="fas fa-stop"></i> Stop Recording
                 </button>
             </div>
 
-            <div id="recordingIndicator" class="hidden text-red-500 text-center block animate-pulse text-lg">
+            <div id="recordingIndicator" class="hidden text-red-500 text-center animate-pulse text-lg bg-red-100 dark:bg-red-900/20 p-4 rounded-lg">
                 <i class="fas fa-circle"></i> Recording in progress...
             </div>
 
             <div id="status" class="hidden my-4 p-4 rounded-lg animate-slideIn text-center font-medium"></div>
 
-            <div id="videoPreview" class="hidden mt-8">
-                <h3 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">Recording Preview</h3>
-                <video id="previewPlayer" controls class="w-full rounded-lg shadow-md"></video>
+            <div id="videoPreview" class="hidden mt-8 transform transition-all duration-300">
+                <h3 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-white flex items-center gap-2">
+                    <i class="fas fa-play-circle"></i> Previous Recording Preview
+                </h3>
+                <video id="previewPlayer" controls class="w-full rounded-lg shadow-xl border border-white/20 dark:border-gray-700/20"></video>
             </div>
 
             <div class="recordings-section mt-12">
-                <h2 class="text-2xl font-semibold mb-6 text-gray-800 dark:text-white">Your Recordings</h2>
-                <ul id="recordingsList" class="space-y-4"></ul>
+                <h2 class="text-2xl font-semibold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
+                    <i class="fas fa-folder-open"></i> Your Recordings
+                </h2>
+                <ul id="recordingsList" class="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar"></ul>
             </div>
         </div>
     </div>
@@ -274,16 +322,26 @@
             <div class="flex items-center gap-4">
                 <span class="text-gray-600 dark:text-gray-400 font-medium">Contact Us:</span>
                 <div class="flex gap-3">
-                    <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer" class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors duration-300">
+                    <a href="https://github.com/Raaaghavagrawal/screen_recorder" target="_blank" rel="noopener noreferrer" class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors duration-300">
                         <i class="fab fa-github text-lg"></i>
                     </a>
-                    <a href="https://linkedin.com/in/yourusername" target="_blank" rel="noopener noreferrer" class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors duration-300">
+                    <a href="www.linkedin.com/in/raghav-agrawal-4431932ab" target="_blank" rel="noopener noreferrer" class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors duration-300">
                         <i class="fab fa-linkedin text-lg"></i>
                     </a>
                 </div>
             </div>
         </div>
     </footer>
+
+    <!-- Add this modal HTML just before the closing body tag -->
+    <div id="videoModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-4 max-w-4xl w-full mx-4 relative">
+            <button onclick="closeVideoModal()" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+            <video id="modalVideoPlayer" controls class="w-full rounded-lg"></video>
+        </div>
+    </div>
 
     <script>
         const startBtn = document.getElementById('startBtn');
@@ -326,7 +384,6 @@
                 startBtn.disabled = true;
                 
                 stopBtn.classList.remove('opacity-30', 'cursor-not-allowed');
-                stopBtn.classList.add('opacity-100');
                 stopBtn.disabled = false;
                 
                 recordingIndicator.classList.remove('hidden');
@@ -337,18 +394,8 @@
                         'Content-Type': 'application/json'
                     }
                 });
-
-                // Add check for empty response
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
                 
-                let data;
-                try {
-                    data = await response.json();
-                } catch (e) {
-                    throw new Error('Invalid JSON response from server');
-                }
+                const data = await response.json();
                 
                 if (data.status === 'success') {
                     showStatus('Recording started');
@@ -386,33 +433,13 @@
                         'Content-Type': 'application/json'
                     }
                 });
-
-                // Add check for empty response
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
                 
-                let data;
-                try {
-                    data = await response.json();
-                } catch (e) {
-                    throw new Error('Invalid JSON response from server');
-                }
+                const data = await response.json();
                 
                 if (data.status === 'success') {
                     showStatus('Recording stopped');
                     const videoPathResponse = await fetch('/get_video_path');
-                    
-                    if (!videoPathResponse.ok) {
-                        throw new Error(`HTTP error! status: ${videoPathResponse.status}`);
-                    }
-                    
-                    let videoPathData;
-                    try {
-                        videoPathData = await videoPathResponse.json();
-                    } catch (e) {
-                        throw new Error('Invalid JSON response when getting video path');
-                    }
+                    const videoPathData = await videoPathResponse.json();
                     
                     if (videoPathData.status === 'success') {
                         saveRecordingToLocalStorage({
@@ -442,23 +469,17 @@
         async function loadRecordings() {
             try {
                 const response = await fetch('/get_recordings');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
                 
                 if (data.status === 'success') {
                     recordingsList.innerHTML = '';
                     
-                    // Combine server recordings with local storage
-                    const localRecordings = loadRecordingsFromLocalStorage();
-                    const allRecordings = [...data.recordings];
-                    
-                    // Update local storage with new recordings
-                    data.recordings.forEach(recording => {
-                        if (!localRecordings.some(r => r.filename === recording.filename)) {
-                            saveRecordingToLocalStorage(recording);
-                        }
-                    });
-
-                    if (allRecordings.length === 0) {
+                    if (data.recordings.length === 0) {
                         recordingsList.innerHTML = `
                             <div class="text-center text-gray-500 dark:text-gray-400 italic py-5">
                                 No recordings found
@@ -466,16 +487,16 @@
                         return;
                     }
                     
-                    // Sort recordings by date (newest first)
-                    allRecordings.sort((a, b) => new Date(b.date) - new Date(a.date));
-                    
-                    allRecordings.forEach(recording => {
+                    data.recordings.forEach(recording => {
                         const li = createRecordingItem(recording);
                         recordingsList.appendChild(li);
                     });
+                } else {
+                    throw new Error(data.message || 'Failed to load recordings');
                 }
             } catch (error) {
-                showStatus('Error loading recordings', true);
+                console.error('Load recordings error:', error);
+                showStatus('Error loading recordings: ' + error.message, true);
             }
         }
 
@@ -483,30 +504,96 @@
             const li = document.createElement('li');
             li.className = 'bg-gray-50 dark:bg-gray-700 p-4 rounded-lg flex flex-wrap justify-between items-center gap-4 transition-all duration-300 hover:translate-x-2';
             li.innerHTML = `
-                <div class="text-gray-600 dark:text-gray-300 text-sm">
-                    ${recording.date}
+                <div class="flex-1">
+                    <div class="text-gray-600 dark:text-gray-300 text-sm">
+                        ${recording.date}
+                    </div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        ${recording.filename}
+                    </div>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="watchRecording('${recording.path}')" 
+                    <button onclick="watchRecording('${recording.filename}')" 
                             class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-all duration-300 flex items-center gap-2">
                         <i class="fas fa-play"></i> Watch
                     </button>
-                    <a href="/download_recording" 
+                    <a href="/download_recording/${recording.filename}" 
                        class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-all duration-300 flex items-center gap-2">
                         <i class="fas fa-download"></i> Download
                     </a>
+                    <button onclick="deleteRecording('${recording.filename}')" 
+                            class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-all duration-300 flex items-center gap-2">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
             `;
             return li;
         }
 
-        function watchRecording(filename) {
-            videoPreview.style.display = 'block';
-            previewPlayer.src = `/static/recordings/${filename}`;
-            previewPlayer.play();
-            
-            videoPreview.scrollIntoView({ behavior: 'smooth' });
+        async function deleteRecording(filename) {
+            if (!confirm('Are you sure you want to delete this recording?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/delete_recording/${filename}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showStatus('Recording deleted successfully');
+                    await loadRecordings(); // Refresh the recordings list
+                } else {
+                    throw new Error(data.message || 'Failed to delete recording');
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+                showStatus('Error deleting recording: ' + error.message, true);
+            }
         }
+
+        function watchRecording(filename) {
+            const modal = document.getElementById('videoModal');
+            const videoPlayer = document.getElementById('modalVideoPlayer');
+            
+            videoPlayer.src = `/static/recordings/${filename.split('/').pop()}`;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            videoPlayer.play();
+        }
+
+        function closeVideoModal() {
+            const modal = document.getElementById('videoModal');
+            const videoPlayer = document.getElementById('modalVideoPlayer');
+            
+            videoPlayer.pause();
+            videoPlayer.src = '';
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // Add event listener to close modal when clicking outside
+        document.getElementById('videoModal').addEventListener('click', (e) => {
+            if (e.target.id === 'videoModal') {
+                closeVideoModal();
+            }
+        });
+
+        // Add escape key listener to close modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeVideoModal();
+            }
+        });
 
         document.addEventListener('DOMContentLoaded', () => {
             resetButtonStates();
@@ -611,6 +698,13 @@
             stopBtn.disabled = true;
 
             recordingIndicator.classList.add('hidden');
+        }
+
+        function scrollToRecording() {
+            document.getElementById('main-content').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
         }
     </script>
 </body>
